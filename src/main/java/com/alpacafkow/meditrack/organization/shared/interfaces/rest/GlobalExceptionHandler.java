@@ -1,6 +1,19 @@
 package com.alpacafkow.meditrack.organization.shared.interfaces.rest;
 
+import com.alpacafkow.meditrack.organization.admin.domain.exceptions.AdminAlreadyExistsForUserException;
+import com.alpacafkow.meditrack.organization.admin.domain.exceptions.AdminInvalidRoleException;
+import com.alpacafkow.meditrack.organization.admin.domain.exceptions.AdminNotFoundException;
+import com.alpacafkow.meditrack.organization.caregiver.domain.exceptions.CaregiverDuplicateRegistrationException;
+import com.alpacafkow.meditrack.organization.caregiver.domain.exceptions.CaregiverInvalidRoleException;
+import com.alpacafkow.meditrack.organization.caregiver.domain.exceptions.CaregiverNotFoundException;
+import com.alpacafkow.meditrack.organization.doctor.domain.exceptions.DoctorDuplicateRegistrationException;
+import com.alpacafkow.meditrack.organization.doctor.domain.exceptions.DoctorInvalidRoleException;
+import com.alpacafkow.meditrack.organization.doctor.domain.exceptions.DoctorNotFoundException;
 import com.alpacafkow.meditrack.organization.organization.domain.exceptions.OrganizationNotFoundException;
+import com.alpacafkow.meditrack.organization.seniorcitizen.domain.exceptions.DeviceUnavailableException;
+import com.alpacafkow.meditrack.organization.seniorcitizen.domain.exceptions.SeniorCitizenAssignmentException;
+import com.alpacafkow.meditrack.organization.seniorcitizen.domain.exceptions.SeniorCitizenDuplicateRegistrationException;
+import com.alpacafkow.meditrack.organization.seniorcitizen.domain.exceptions.SeniorCitizenNotFoundException;
 import com.alpacafkow.meditrack.organization.shared.interfaces.rest.errors.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +35,71 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(OrganizationNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleOrganizationNotFound(OrganizationNotFoundException ex, WebRequest request) {
         return buildErrorResponse(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AdminNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleAdminNotFound(AdminNotFoundException ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AdminAlreadyExistsForUserException.class)
+    public ResponseEntity<ErrorResponse> handleAdminAlreadyExists(AdminAlreadyExistsForUserException ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.CONFLICT, "CONFLICT", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AdminInvalidRoleException.class)
+    public ResponseEntity<ErrorResponse> handleAdminInvalidRole(AdminInvalidRoleException ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_ROLE", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(DoctorNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleDoctorNotFound(DoctorNotFoundException ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(DoctorDuplicateRegistrationException.class)
+    public ResponseEntity<ErrorResponse> handleDoctorDuplicate(DoctorDuplicateRegistrationException ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.CONFLICT, ex.getCode(), ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(DoctorInvalidRoleException.class)
+    public ResponseEntity<ErrorResponse> handleDoctorInvalidRole(DoctorInvalidRoleException ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_ROLE", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(CaregiverNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleCaregiverNotFound(CaregiverNotFoundException ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(CaregiverDuplicateRegistrationException.class)
+    public ResponseEntity<ErrorResponse> handleCaregiverDuplicate(CaregiverDuplicateRegistrationException ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.CONFLICT, ex.getCode(), ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(CaregiverInvalidRoleException.class)
+    public ResponseEntity<ErrorResponse> handleCaregiverInvalidRole(CaregiverInvalidRoleException ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_ROLE", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(SeniorCitizenNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleSeniorCitizenNotFound(SeniorCitizenNotFoundException ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(SeniorCitizenDuplicateRegistrationException.class)
+    public ResponseEntity<ErrorResponse> handleSeniorCitizenDuplicate(SeniorCitizenDuplicateRegistrationException ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.CONFLICT, ex.getCode(), ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(SeniorCitizenAssignmentException.class)
+    public ResponseEntity<ErrorResponse> handleSeniorCitizenAssignment(SeniorCitizenAssignmentException ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.CONFLICT, ex.getCode(), ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(DeviceUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleDeviceUnavailable(DeviceUnavailableException ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.SERVICE_UNAVAILABLE, "DEVICES_UNAVAILABLE", ex.getMessage(), request);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
