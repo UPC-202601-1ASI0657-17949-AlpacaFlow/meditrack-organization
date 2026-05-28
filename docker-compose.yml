@@ -1,0 +1,73 @@
+services:
+  mysql-meditrack:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-meditrack}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - meditrack-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  organization-service:
+    build: .
+    image: meditrack-organization:latest
+    container_name: organization
+    restart: unless-stopped
+    expose:
+      - "8080"
+    ports:
+      - "8282:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8080
+      MYSQL_CONNECTION: jdbc:mysql://mysql-meditrack:3306/${MYSQL_DATABASE:-meditrack}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      AUTHORIZATION_JWT_SECRET: ${JWT_SECRET}
+      IAM_ADAPTER: ${IAM_ADAPTER:-stub}
+      DEVICES_ADAPTER: ${DEVICES_ADAPTER:-stub}
+    depends_on:
+      mysql-meditrack:
+        condition: service_healthy
+    networks:
+      - meditrack-net
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - meditrack-net
+    depends_on:
+      - organization-service
+
+networks:
+  meditrack-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  caddy_data:
+  caddy_config:
