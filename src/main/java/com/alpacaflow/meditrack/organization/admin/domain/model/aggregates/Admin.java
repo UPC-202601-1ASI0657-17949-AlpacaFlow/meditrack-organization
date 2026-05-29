@@ -30,6 +30,7 @@ import lombok.Getter;
 @Getter
 public class Admin extends AuditableAbstractAggregateRoot<Admin> {
 
+     //logica de negocio
     @ManyToOne
     @JoinColumn(name = "org_id", nullable = false)
     private Organization organization;
