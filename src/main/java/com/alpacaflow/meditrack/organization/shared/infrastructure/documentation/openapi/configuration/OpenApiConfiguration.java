@@ -8,9 +8,11 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.StringUtils;
 
 /**
  * Spring configuration that exposes an OpenAPI description for the application.
@@ -33,6 +35,9 @@ public class OpenApiConfiguration {
 
     @Value("${documentation.application.version}")
     String applicationVersion;
+
+    @Value("${documentation.public-base-url:}")
+    String publicBaseUrl;
 
     // Methods
 
@@ -75,6 +80,10 @@ public class OpenApiConfiguration {
                                         .type(SecurityScheme.Type.HTTP)
                                         .scheme("bearer")
                                         .bearerFormat("JWT")));
+
+        if (StringUtils.hasText(publicBaseUrl)) {
+            openApi.addServersItem(new Server().url(publicBaseUrl.trim()));
+        }
 
         return openApi;
     }

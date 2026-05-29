@@ -1,5 +1,8 @@
 # HTTPS público con certificado Let's Encrypt (automático vía Caddy).
 # El tráfico interno hacia organization sigue en HTTP (red Docker).
 {$DOMAIN} {
-	reverse_proxy organization-service:8080
+	reverse_proxy organization-service:8080 {
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+	}
 }
