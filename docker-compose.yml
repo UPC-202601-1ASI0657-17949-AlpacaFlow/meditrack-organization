@@ -37,7 +37,8 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       AUTHORIZATION_JWT_SECRET: ${JWT_SECRET}
-      IAM_ADAPTER: ${IAM_ADAPTER:-stub}
+      IAM_ADAPTER: ${IAM_ADAPTER:-rest}
+      IAM_BASE_URL: ${IAM_BASE_URL:-https://meditrack-iam-gmh0b2eshgcpbmhw.eastus-01.azurewebsites.net}
       DEVICES_ADAPTER: ${DEVICES_ADAPTER:-stub}
       PUBLIC_BASE_URL: https://${DOMAIN}
       CORS_ALLOWED_ORIGINS: https://${DOMAIN},http://localhost:4200
