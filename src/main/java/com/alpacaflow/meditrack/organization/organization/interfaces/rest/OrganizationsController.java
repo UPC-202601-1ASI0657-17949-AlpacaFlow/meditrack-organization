@@ -7,6 +7,7 @@ import com.alpacaflow.meditrack.organization.organization.domain.services.Organi
 import com.alpacaflow.meditrack.organization.organization.domain.services.OrganizationQueryService;
 import com.alpacaflow.meditrack.organization.organization.interfaces.rest.resources.request.CreateOrganizationRequest;
 import com.alpacaflow.meditrack.organization.organization.interfaces.rest.resources.request.UpdateOrganizationRequest;
+import com.alpacaflow.meditrack.organization.organization.interfaces.rest.resources.response.OrganizationNameAvailabilityResponse;
 import com.alpacaflow.meditrack.organization.organization.interfaces.rest.resources.response.OrganizationResponse;
 import com.alpacaflow.meditrack.organization.organization.interfaces.rest.transform.CreateOrganizationCommandFromRequestAssembler;
 import com.alpacaflow.meditrack.organization.organization.interfaces.rest.transform.OrganizationResponseFromEntityAssembler;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -58,6 +60,15 @@ public class OrganizationsController {
         var id = organizationCommandService.handle(command);
         var organization = organizationQueryService.handle(new GetOrganizationByIdQuery(id)).orElseThrow();
         return new ResponseEntity<>(OrganizationResponseFromEntityAssembler.toResponse(organization), HttpStatus.CREATED);
+    }
+
+    @GetMapping("/availability")
+    @Operation(summary = "Check if an organization name is available for sign-up")
+    @ApiResponse(responseCode = "200", description = "Availability result")
+    public ResponseEntity<OrganizationNameAvailabilityResponse> checkOrganizationNameAvailability(
+            @RequestParam(required = false, defaultValue = "") String name) {
+        var available = organizationQueryService.isOrganizationNameAvailable(name);
+        return ResponseEntity.ok(new OrganizationNameAvailabilityResponse(available));
     }
 
     @GetMapping("/{organizationId}")
