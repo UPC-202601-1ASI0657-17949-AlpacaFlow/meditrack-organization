@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.core.JmsMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
@@ -29,15 +29,15 @@ public class MessagingIamContextFacade implements IamContextFacade {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessagingIamContextFacade.class);
 
     private final RestClient restClient;
-    private final JmsTemplate jmsTemplate;
+    private final JmsMessagingTemplate jmsMessagingTemplate;
 
     public MessagingIamContextFacade(
             @Value("${app.iam.base-url}") String baseUrl,
-            JmsTemplate jmsTemplate) {
+            JmsMessagingTemplate jmsMessagingTemplate) {
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl)
                 .build();
-        this.jmsTemplate = jmsTemplate;
+        this.jmsMessagingTemplate = jmsMessagingTemplate;
     }
 
     @Override
@@ -95,12 +95,12 @@ public class MessagingIamContextFacade implements IamContextFacade {
         }
 
         LOGGER.info("Requesting staff provisioning via JMS for email={} role={}", canonical, role);
-        var response = jmsTemplate.convertSendAndReceive(
+        var staffResponse = jmsMessagingTemplate.convertSendAndReceive(
                 MessagingQueueNames.STAFF_PROVISION_REQUESTED,
-                new StaffProvisionRequestMessage(canonical, role.toLowerCase(Locale.ROOT)));
+                new StaffProvisionRequestMessage(canonical, role.toLowerCase(Locale.ROOT)),
+                StaffProvisionResponseMessage.class);
 
-        if (!(response instanceof StaffProvisionResponseMessage staffResponse)
-                || staffResponse.userId() == null) {
+        if (staffResponse == null || staffResponse.userId() == null) {
             throw new IllegalStateException("IAM did not return a user id for " + canonical);
         }
         return staffResponse.userId();

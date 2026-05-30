@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.config.JmsListenerContainerFactory;
+import org.springframework.jms.core.JmsMessagingTemplate;
 import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
 import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.jms.support.converter.MessageType;
@@ -32,5 +33,14 @@ public class JmsConfiguration {
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(jacksonJmsMessageConverter);
         return factory;
+    }
+
+    @Bean
+    public JmsMessagingTemplate jmsMessagingTemplate(
+            ConnectionFactory connectionFactory,
+            MessageConverter jacksonJmsMessageConverter) {
+        var template = new JmsMessagingTemplate(connectionFactory);
+        template.setJmsMessageConverter(jacksonJmsMessageConverter);
+        return template;
     }
 }
