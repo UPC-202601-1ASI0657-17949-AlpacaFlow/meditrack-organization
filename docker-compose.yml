@@ -41,7 +41,11 @@ services:
       IAM_BASE_URL: ${IAM_BASE_URL:-https://meditrack-iam-gmh0b2eshgcpbmhw.eastus-01.azurewebsites.net}
       DEVICES_ADAPTER: ${DEVICES_ADAPTER:-stub}
       PUBLIC_BASE_URL: https://${DOMAIN}
-      CORS_ALLOWED_ORIGINS: https://${DOMAIN},http://localhost:4200
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://${DOMAIN},http://localhost:4200}
+      MESSAGING_ENABLED: ${MESSAGING_ENABLED:-false}
+      ACTIVEMQ_BROKER_URL: ${ACTIVEMQ_BROKER_URL:-tcp://meditrack-activemq:61616}
+      ACTIVEMQ_USER: ${ACTIVEMQ_USER:-meditrack}
+      ACTIVEMQ_PASSWORD: ${ACTIVEMQ_PASSWORD:-}
     depends_on:
       mysql-meditrack:
         condition: service_healthy
@@ -68,6 +72,7 @@ services:
 
 networks:
   meditrack-net:
+    name: meditrack-net
     driver: bridge
 
 volumes:

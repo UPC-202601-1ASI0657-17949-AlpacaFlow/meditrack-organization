@@ -31,9 +31,17 @@ jobs:
             -o IdentitiesOnly=yes \
             "${DEPLOY_USER}@${DEPLOY_HOST}" \
             'set -e
+             docker network create meditrack-net 2>/dev/null || true
+             if [ -d ~/meditrack-broker/.git ] && [ -f ~/meditrack-broker/.env ]; then
+               cd ~/meditrack-broker
+               git fetch origin
+               git reset --hard origin/main
+               docker compose pull
+               docker compose up -d
+             fi
              cd ~/meditrack-organization
              git fetch origin
              git reset --hard origin/main
-             docker-compose down
-             docker-compose up -d --build
-             docker-compose ps'
+             docker compose down
+             docker compose up -d --build
+             docker compose ps'
