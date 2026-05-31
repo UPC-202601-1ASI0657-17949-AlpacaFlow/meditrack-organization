@@ -12,16 +12,26 @@ import org.springframework.jms.support.converter.MappingJackson2MessageConverter
 import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.jms.support.converter.MessageType;
 
+import java.util.Map;
+
 @Configuration
 @EnableJms
 @ConditionalOnProperty(name = "app.messaging.enabled", havingValue = "true")
 public class JmsConfiguration {
+
+    private static final String IAM_ADMIN_REGISTRATION_TYPE =
+            "com.alpacaflow.meditrack.iam.shared.infrastructure.messaging.AdminRegistrationRequestedMessage";
+    private static final String IAM_STAFF_PROVISION_RESPONSE_TYPE =
+            "com.alpacaflow.meditrack.iam.shared.infrastructure.messaging.StaffProvisionResponseMessage";
 
     @Bean
     public MessageConverter jacksonJmsMessageConverter() {
         var converter = new MappingJackson2MessageConverter();
         converter.setTargetType(MessageType.TEXT);
         converter.setTypeIdPropertyName("_type");
+        converter.setTypeIdMappings(Map.of(
+                IAM_ADMIN_REGISTRATION_TYPE, AdminRegistrationRequestedMessage.class,
+                IAM_STAFF_PROVISION_RESPONSE_TYPE, StaffProvisionResponseMessage.class));
         return converter;
     }
 
