@@ -17,8 +17,8 @@ public record CreateSeniorCitizenCommand(
         Long deviceId
 ) {
     public CreateSeniorCitizenCommand {
-        if (organizationId == null || organizationId <= 0) {
-            throw new IllegalArgumentException("organizationId cannot be null or less than 1");
+        if (organizationId == null || organizationId < 0) {
+            throw new IllegalArgumentException("organizationId cannot be null or negative");
         }
         if (firstName == null || firstName.isBlank()) {
             throw new IllegalArgumentException("firstName cannot be null or blank");

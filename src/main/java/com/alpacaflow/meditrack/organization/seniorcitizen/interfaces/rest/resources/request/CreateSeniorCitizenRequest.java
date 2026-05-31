@@ -2,18 +2,18 @@ package com.alpacaflow.meditrack.organization.seniorcitizen.interfaces.rest.reso
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Positive;
 
 import java.util.Date;
 
 @Schema(description = "Payload to create a senior citizen within an organization")
 public record CreateSeniorCitizenRequest(
         @NotNull(message = "organizationId is required")
-        @Positive(message = "organizationId must be positive")
-        @Schema(example = "1") Long organizationId,
+        @Min(value = 0, message = "organizationId must be zero or positive")
+        @Schema(example = "1", description = "Use 0 for relatives (Individual Users organization)") Long organizationId,
 
         @NotBlank(message = "firstName is required")
         @Schema(example = "Maria") String firstName,
@@ -26,8 +26,8 @@ public record CreateSeniorCitizenRequest(
         @Schema(example = "1955-04-12", type = "string", format = "date") Date birthDate,
 
         @NotBlank(message = "gender is required")
-        @Pattern(regexp = "^(?i)(Masculino|Femenino)$", message = "gender must be Masculino or Femenino")
-        @Schema(example = "Femenino", allowableValues = {"Masculino", "Femenino"}) String gender,
+        @Pattern(regexp = "^(?i)(Masculino|Femenino|male|female)$", message = "gender must be Masculino or Femenino")
+        @Schema(example = "Femenino", allowableValues = {"Masculino", "Femenino", "male", "female"}) String gender,
 
         @NotNull(message = "weight is required")
         @Schema(example = "62.5") Double weight,

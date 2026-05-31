@@ -5,6 +5,7 @@ import com.alpacaflow.meditrack.organization.caregiver.infrastructure.persistenc
 import com.alpacaflow.meditrack.organization.doctor.domain.exceptions.DoctorNotFoundException;
 import com.alpacaflow.meditrack.organization.doctor.infrastructure.persistence.jpa.repositories.DoctorRepository;
 import com.alpacaflow.meditrack.organization.organization.domain.exceptions.OrganizationNotFoundException;
+import com.alpacaflow.meditrack.organization.organization.domain.model.aggregates.Organization;
 import com.alpacaflow.meditrack.organization.organization.infrastructure.persistence.jpa.repositories.OrganizationRepository;
 import com.alpacaflow.meditrack.organization.seniorcitizen.domain.exceptions.DeviceUnavailableException;
 import com.alpacaflow.meditrack.organization.seniorcitizen.domain.exceptions.SeniorCitizenAssignmentException;
@@ -49,24 +50,26 @@ public class SeniorCitizenCommandServiceImpl implements SeniorCitizenCommandServ
     private final DoctorRepository doctorRepository;
     private final CaregiverRepository caregiverRepository;
     private final DeviceContextFacade deviceContextFacade;
+    private final IndividualUsersOrganizationResolver individualUsersOrganizationResolver;
 
     public SeniorCitizenCommandServiceImpl(SeniorCitizenRepository seniorCitizenRepository,
                                            OrganizationRepository organizationRepository,
                                            DoctorRepository doctorRepository,
                                            CaregiverRepository caregiverRepository,
-                                           DeviceContextFacade deviceContextFacade) {
+                                           DeviceContextFacade deviceContextFacade,
+                                           IndividualUsersOrganizationResolver individualUsersOrganizationResolver) {
         this.seniorCitizenRepository = seniorCitizenRepository;
         this.organizationRepository = organizationRepository;
         this.doctorRepository = doctorRepository;
         this.caregiverRepository = caregiverRepository;
         this.deviceContextFacade = deviceContextFacade;
+        this.individualUsersOrganizationResolver = individualUsersOrganizationResolver;
     }
 
     @Override
     @Transactional
     public Long handle(CreateSeniorCitizenCommand command) {
-        var organization = organizationRepository.findById(command.organizationId())
-                .orElseThrow(() -> new OrganizationNotFoundException(command.organizationId()));
+        var organization = resolveOrganization(command.organizationId());
 
         assertNoDuplicateInOrganization(
                 organization.getId(),
@@ -299,5 +302,14 @@ public class SeniorCitizenCommandServiceImpl implements SeniorCitizenCommandServ
                     SeniorCitizenDuplicateRegistrationException.CODE_DUPLICATE_FULL_NAME,
                     "Another senior citizen in this organization already has this full name.");
         }
+    }
+
+    private Organization resolveOrganization(
+            Long organizationId) {
+        if (organizationId != null && organizationId == 0) {
+            return individualUsersOrganizationResolver.resolve();
+        }
+        return organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
     }
 }

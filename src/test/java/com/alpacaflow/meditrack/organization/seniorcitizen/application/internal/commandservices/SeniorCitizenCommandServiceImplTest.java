@@ -60,6 +60,7 @@ class SeniorCitizenCommandServiceImplTest {
     @Mock private DoctorRepository doctorRepository;
     @Mock private CaregiverRepository caregiverRepository;
     @Mock private DeviceContextFacade deviceContextFacade;
+    @Mock private IndividualUsersOrganizationResolver individualUsersOrganizationResolver;
 
     @InjectMocks private SeniorCitizenCommandServiceImpl commandService;
 
