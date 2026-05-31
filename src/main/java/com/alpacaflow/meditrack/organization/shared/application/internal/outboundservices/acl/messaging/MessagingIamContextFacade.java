@@ -10,10 +10,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.jms.core.JmsMessagingTemplate;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+
+import jakarta.jms.JMSException;
 
 import java.util.Locale;
 import java.util.Optional;
@@ -29,15 +31,15 @@ public class MessagingIamContextFacade implements IamContextFacade {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessagingIamContextFacade.class);
 
     private final RestClient restClient;
-    private final JmsMessagingTemplate jmsMessagingTemplate;
+    private final JmsTemplate jmsTemplate;
 
     public MessagingIamContextFacade(
             @Value("${app.iam.base-url}") String baseUrl,
-            JmsMessagingTemplate jmsMessagingTemplate) {
+            JmsTemplate jmsTemplate) {
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl)
                 .build();
-        this.jmsMessagingTemplate = jmsMessagingTemplate;
+        this.jmsTemplate = jmsTemplate;
     }
 
     @Override
@@ -95,12 +97,23 @@ public class MessagingIamContextFacade implements IamContextFacade {
         }
 
         LOGGER.info("Requesting staff provisioning via JMS for email={} role={}", canonical, role);
-        var staffResponse = jmsMessagingTemplate.convertSendAndReceive(
+        var request = new StaffProvisionRequestMessage(canonical, role.toLowerCase(Locale.ROOT));
+        var replyMessage = jmsTemplate.sendAndReceive(
                 MessagingQueueNames.STAFF_PROVISION_REQUESTED,
-                new StaffProvisionRequestMessage(canonical, role.toLowerCase(Locale.ROOT)),
-                StaffProvisionResponseMessage.class);
+                session -> jmsTemplate.getMessageConverter().toMessage(request, session));
 
-        if (staffResponse == null || staffResponse.userId() == null) {
+        if (replyMessage == null) {
+            throw new IllegalStateException("IAM did not return a user id for " + canonical);
+        }
+
+        Object responsePayload;
+        try {
+            responsePayload = jmsTemplate.getMessageConverter().fromMessage(replyMessage);
+        } catch (JMSException e) {
+            throw new IllegalStateException("Failed to read IAM staff provision reply for " + canonical, e);
+        }
+        if (!(responsePayload instanceof StaffProvisionResponseMessage staffResponse)
+                || staffResponse.userId() == null) {
             throw new IllegalStateException("IAM did not return a user id for " + canonical);
         }
         return staffResponse.userId();

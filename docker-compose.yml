@@ -73,7 +73,7 @@ services:
 networks:
   meditrack-net:
     name: meditrack-net
-    driver: bridge
+    external: true
 
 volumes:
   mysql_data:
