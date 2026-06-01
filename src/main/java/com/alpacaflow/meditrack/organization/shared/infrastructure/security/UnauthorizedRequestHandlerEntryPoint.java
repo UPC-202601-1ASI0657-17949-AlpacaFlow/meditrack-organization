@@ -13,7 +13,7 @@ import java.io.IOException;
 
 /**
  * Returns 401 + {@link ErrorResponse} JSON when an unauthenticated client hits a protected endpoint.
- * With Fase 6 Opción A ({@code permitAll}), this is not invoked; it is ready for JWT / authenticated routes.
+ * Invoked when a client hits a protected route without a valid Bearer JWT.
  */
 @Component
 public class UnauthorizedRequestHandlerEntryPoint implements AuthenticationEntryPoint {

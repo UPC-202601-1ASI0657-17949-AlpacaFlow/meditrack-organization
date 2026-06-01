@@ -6,18 +6,22 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Fase 6 — Seguridad.
- * <p><b>Opción A (Sprint 1, pruebas de funcionamiento):</b> {@code anyRequest().permitAll()} para Postman,
- * Swagger y evidencias locales sin IAM. La iteración ADD “Seguridad” documentará el endurecimiento
- * (JWT offline, matriz por endpoint, etc.).</p>
- * <p><b>Opción B (posterior):</b> sustituir {@code permitAll()} por reglas por ruta + filtro Bearer JWT,
- * manteniendo este {@link UnauthorizedRequestHandlerEntryPoint} para respuestas 401 coherentes.</p>
+ * Fase 6 — Seguridad (Opción B): Bearer JWT aligned with IAM (UTF-8 secret, HS384).
+ * <p>Public without token: Swagger, IAM server-to-server ({@code /api/v1/internal/**}),
+ * and organization name availability during sign-up.</p>
  */
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfiguration {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    public WebSecurityConfiguration(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(
@@ -27,7 +31,16 @@ public class WebSecurityConfiguration {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(e -> e.authenticationEntryPoint(unauthorizedRequestHandlerEntryPoint))
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html",
+                                "/api/v1/internal/**",
+                                "/api/v1/organizations/availability"
+                        ).permitAll()
+                        .anyRequest().authenticated())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }
