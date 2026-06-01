@@ -10,8 +10,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 /**
  * Fase 6 — Seguridad (Opción B): Bearer JWT aligned with IAM (UTF-8 secret, HS384).
- * <p>Public without token: Swagger, IAM server-to-server ({@code /api/v1/internal/**}),
- * and organization name availability during sign-up.</p>
+ * <p>Public without token: Swagger and organization name availability (sign-up via IAM).
+ * {@code /api/v1/internal/**} is not public: blocked at Caddy on the VM; requires JWT if reached.</p>
  */
 @Configuration
 @EnableWebSecurity
@@ -36,7 +36,6 @@ public class WebSecurityConfiguration {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
-                                "/api/v1/internal/**",
                                 "/api/v1/organizations/availability"
                         ).permitAll()
                         .anyRequest().authenticated())

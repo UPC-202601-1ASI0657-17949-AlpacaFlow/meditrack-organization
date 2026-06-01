@@ -1,8 +1,16 @@
 # HTTPS público con certificado Let's Encrypt (automático vía Caddy).
 # El tráfico interno hacia organization sigue en HTTP (red Docker).
 {$DOMAIN} {
-	reverse_proxy organization-service:8080 {
-		header_up X-Forwarded-Proto {scheme}
-		header_up X-Forwarded-Host {host}
+	# ACL server-to-server: no exponer /internal por Internet (IAM usa JMS).
+	@internal path /api/v1/internal/*
+	handle @internal {
+		respond "Forbidden" 403
+	}
+
+	handle {
+		reverse_proxy organization-service:8080 {
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+		}
 	}
 }

@@ -29,7 +29,8 @@ services:
     expose:
       - "8080"
     ports:
-      - "8282:8080"
+      # Solo localhost en la VM (evita bypass de Caddy en /api/v1/internal/**)
+      - "127.0.0.1:8282:8080"
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SERVER_PORT: 8080
