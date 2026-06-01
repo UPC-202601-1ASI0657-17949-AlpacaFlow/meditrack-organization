@@ -94,7 +94,7 @@ class SeniorCitizenCommandServiceImplTest {
     void shouldCreateSeniorCitizenAndAutoCreateDeviceWhenDeviceIdIsNull() {
         var organization = sampleOrganization();
         when(organizationRepository.findById(1L)).thenReturn(Optional.of(organization));
-        when(deviceContextFacade.createDeviceForSeniorCitizen()).thenReturn(5001L);
+        when(deviceContextFacade.reserveNextDeviceId()).thenReturn(5001L);
         when(seniorCitizenRepository.save(any(SeniorCitizen.class))).thenAnswer(inv -> inv.getArgument(0));
 
         commandService.handle(sampleCreateCommand(null));
@@ -104,7 +104,9 @@ class SeniorCitizenCommandServiceImplTest {
         var saved = captor.getValue();
         assertEquals(5001L, saved.getDeviceId());
         assertEquals("Maria", saved.getFirstName());
-        verify(deviceContextFacade).createDeviceForSeniorCitizen();
+        verify(deviceContextFacade).reserveNextDeviceId();
+        verify(deviceContextFacade).registerDeviceForSeniorCitizen(5001L);
+        verify(deviceContextFacade, never()).createDeviceForSeniorCitizen();
     }
 
     @Test
@@ -124,18 +126,20 @@ class SeniorCitizenCommandServiceImplTest {
     }
 
     @Test
-    void shouldFallBackToCreatingDeviceWhenProvidedDeviceDoesNotExist() {
+    void shouldUseProvidedDeviceIdWhenNotYetRegisteredInDevicesContext() {
         var organization = sampleOrganization();
         when(organizationRepository.findById(1L)).thenReturn(Optional.of(organization));
         when(deviceContextFacade.deviceExists(9999L)).thenReturn(false);
-        when(deviceContextFacade.createDeviceForSeniorCitizen()).thenReturn(5002L);
         when(seniorCitizenRepository.save(any(SeniorCitizen.class))).thenAnswer(inv -> inv.getArgument(0));
 
         commandService.handle(sampleCreateCommand(9999L));
 
         var captor = ArgumentCaptor.forClass(SeniorCitizen.class);
         verify(seniorCitizenRepository, atLeastOnce()).save(captor.capture());
-        assertEquals(5002L, captor.getValue().getDeviceId());
+        assertEquals(9999L, captor.getValue().getDeviceId());
+        verify(deviceContextFacade).registerDeviceForSeniorCitizen(9999L);
+        verify(deviceContextFacade, never()).createDeviceForSeniorCitizen();
+        verify(deviceContextFacade, never()).reserveNextDeviceId();
     }
 
     @Test
@@ -163,7 +167,6 @@ class SeniorCitizenCommandServiceImplTest {
     void shouldThrowDeviceAlreadyAssignedWhenProvidedDeviceLinkedToAnotherSenior() {
         var organization = sampleOrganization();
         when(organizationRepository.findById(1L)).thenReturn(Optional.of(organization));
-        when(deviceContextFacade.deviceExists(7777L)).thenReturn(true);
         when(seniorCitizenRepository.existsByDeviceId(7777L)).thenReturn(true);
 
         var ex = assertThrows(SeniorCitizenDuplicateRegistrationException.class,

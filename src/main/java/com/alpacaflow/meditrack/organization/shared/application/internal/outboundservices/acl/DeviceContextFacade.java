@@ -29,4 +29,15 @@ public interface DeviceContextFacade {
      * @return the id of the newly created device
      */
     Long createDeviceForSeniorCitizen();
+
+    /**
+     * Reserves the next device identifier without registering the device yet.
+     * Used to defer device registration until the senior citizen is persisted successfully.
+     */
+    Long reserveNextDeviceId();
+
+    /**
+     * Registers a device in the Devices context after a senior citizen was saved successfully.
+     */
+    void registerDeviceForSeniorCitizen(Long deviceId);
 }

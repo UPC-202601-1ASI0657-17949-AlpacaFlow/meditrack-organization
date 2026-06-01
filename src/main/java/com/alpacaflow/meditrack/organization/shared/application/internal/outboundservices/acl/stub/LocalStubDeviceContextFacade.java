@@ -43,8 +43,21 @@ public class LocalStubDeviceContextFacade implements DeviceContextFacade {
 
     @Override
     public Long createDeviceForSeniorCitizen() {
-        long id = sequence.incrementAndGet();
-        devicesById.put(id, new ExternalDevice(id, DEFAULT_STATUS));
+        long id = reserveNextDeviceId();
+        registerDeviceForSeniorCitizen(id);
         return id;
+    }
+
+    @Override
+    public Long reserveNextDeviceId() {
+        return sequence.incrementAndGet();
+    }
+
+    @Override
+    public void registerDeviceForSeniorCitizen(Long deviceId) {
+        if (deviceId == null || deviceId <= 0) {
+            throw new IllegalArgumentException("Invalid device id");
+        }
+        devicesById.putIfAbsent(deviceId, new ExternalDevice(deviceId, DEFAULT_STATUS));
     }
 }

@@ -24,6 +24,8 @@ import com.alpacaflow.meditrack.organization.seniorcitizen.infrastructure.persis
 import com.alpacaflow.meditrack.organization.shared.application.internal.outboundservices.acl.DeviceContextFacade;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Optional;
 
@@ -78,10 +80,9 @@ public class SeniorCitizenCommandServiceImpl implements SeniorCitizenCommandServ
                 command.dni(),
                 null);
 
-        Long finalDeviceId = resolveDeviceId(command.deviceId());
-        if (command.deviceId() != null && command.deviceId() > 0 && finalDeviceId.equals(command.deviceId())) {
-            assertDeviceNotLinkedToAnotherSenior(finalDeviceId, null);
-        }
+        Long finalDeviceId = resolveDeviceIdForCreate(command.deviceId());
+        assertDeviceNotLinkedToAnotherSenior(finalDeviceId, null);
+        scheduleDeviceRegistrationAfterCommit(finalDeviceId, command.deviceId());
 
         var seniorCitizen = new SeniorCitizen(
                 organization,
@@ -222,34 +223,47 @@ public class SeniorCitizenCommandServiceImpl implements SeniorCitizenCommandServ
     // ----------------------------------------------------------------------
 
     /**
-     * Returns the deviceId to persist on the senior citizen. Mirrors the monolith semantics:
-     * <ul>
-     *     <li>If no deviceId provided → ask Devices context to create a new device.</li>
-     *     <li>If deviceId provided but it doesn't exist in Devices → fall back to creating a new one.</li>
-     *     <li>If deviceId provided and exists → keep the provided id.</li>
-     * </ul>
+     * Resolves the device id to persist without registering the device in the Devices context.
+     * Registration is deferred until after the senior citizen is saved successfully.
      */
-    private Long resolveDeviceId(Long providedDeviceId) {
+    private Long resolveDeviceIdForCreate(Long providedDeviceId) {
         if (providedDeviceId == null || providedDeviceId == 0L) {
-            return safeCreateDevice();
-        }
-        if (!deviceContextFacade.deviceExists(providedDeviceId)) {
-            return safeCreateDevice();
+            return reserveNextDeviceId();
         }
         return providedDeviceId;
     }
 
-    private Long safeCreateDevice() {
+    private Long reserveNextDeviceId() {
         try {
-            Long created = deviceContextFacade.createDeviceForSeniorCitizen();
-            if (created == null || created <= 0) {
+            Long reserved = deviceContextFacade.reserveNextDeviceId();
+            if (reserved == null || reserved <= 0) {
                 throw new DeviceUnavailableException("Devices context returned an invalid id");
             }
-            return created;
+            return reserved;
         } catch (DeviceUnavailableException e) {
             throw e;
         } catch (RuntimeException e) {
-            throw new DeviceUnavailableException("Failed to create device: " + e.getMessage());
+            throw new DeviceUnavailableException("Failed to reserve device id: " + e.getMessage());
+        }
+    }
+
+    private void scheduleDeviceRegistrationAfterCommit(Long resolvedDeviceId, Long providedDeviceId) {
+        boolean autoCreate = providedDeviceId == null || providedDeviceId <= 0;
+        boolean needsRegistration = autoCreate || !deviceContextFacade.deviceExists(providedDeviceId);
+        if (!needsRegistration) {
+            return;
+        }
+
+        Runnable registerDevice = () -> deviceContextFacade.registerDeviceForSeniorCitizen(resolvedDeviceId);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    registerDevice.run();
+                }
+            });
+        } else {
+            registerDevice.run();
         }
     }
 
