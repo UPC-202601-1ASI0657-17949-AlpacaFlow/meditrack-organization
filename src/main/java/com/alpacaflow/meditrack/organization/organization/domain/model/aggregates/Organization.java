@@ -66,8 +66,8 @@ public class Organization extends AuditableAbstractAggregateRoot<Organization> {
             throw new IllegalArgumentException("Type cannot be null or blank");
         }
         var normalized = value.toLowerCase().trim();
-        if (!"clinic".equals(normalized) && !"resident".equals(normalized)) {
-            throw new IllegalArgumentException("Type must be either 'clinic' or 'resident'");
+        if (!"clinic".equals(normalized) && !"resident".equals(normalized) && !"individual".equals(normalized)) {
+            throw new IllegalArgumentException("Type must be either 'clinic', 'resident' or 'individual'");
         }
         return normalized;
     }
