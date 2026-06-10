@@ -82,7 +82,6 @@ public class SeniorCitizenCommandServiceImpl implements SeniorCitizenCommandServ
 
         Long finalDeviceId = resolveDeviceIdForCreate(command.deviceId());
         assertDeviceNotLinkedToAnotherSenior(finalDeviceId, null);
-        scheduleDeviceRegistrationAfterCommit(finalDeviceId, command.deviceId());
 
         var seniorCitizen = new SeniorCitizen(
                 organization,
@@ -99,6 +98,7 @@ public class SeniorCitizenCommandServiceImpl implements SeniorCitizenCommandServ
         var saved = seniorCitizenRepository.save(seniorCitizen);
         saved.publishCreatedEvent();
         seniorCitizenRepository.save(saved);
+        scheduleDeviceRegistrationAfterCommit(finalDeviceId, command.deviceId(), saved.getId());
         return saved.getId();
     }
 
@@ -247,14 +247,14 @@ public class SeniorCitizenCommandServiceImpl implements SeniorCitizenCommandServ
         }
     }
 
-    private void scheduleDeviceRegistrationAfterCommit(Long resolvedDeviceId, Long providedDeviceId) {
+    private void scheduleDeviceRegistrationAfterCommit(Long resolvedDeviceId, Long providedDeviceId, Long seniorCitizenId) {
         boolean autoCreate = providedDeviceId == null || providedDeviceId <= 0;
         boolean needsRegistration = autoCreate || !deviceContextFacade.deviceExists(providedDeviceId);
         if (!needsRegistration) {
             return;
         }
 
-        Runnable registerDevice = () -> deviceContextFacade.registerDeviceForSeniorCitizen(resolvedDeviceId);
+        Runnable registerDevice = () -> deviceContextFacade.registerDeviceForSeniorCitizen(resolvedDeviceId, seniorCitizenId);
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override

@@ -105,7 +105,7 @@ class SeniorCitizenCommandServiceImplTest {
         assertEquals(5001L, saved.getDeviceId());
         assertEquals("Maria", saved.getFirstName());
         verify(deviceContextFacade).reserveNextDeviceId();
-        verify(deviceContextFacade).registerDeviceForSeniorCitizen(5001L);
+        verify(deviceContextFacade).registerDeviceForSeniorCitizen(5001L, null);
         verify(deviceContextFacade, never()).createDeviceForSeniorCitizen();
     }
 
@@ -137,7 +137,7 @@ class SeniorCitizenCommandServiceImplTest {
         var captor = ArgumentCaptor.forClass(SeniorCitizen.class);
         verify(seniorCitizenRepository, atLeastOnce()).save(captor.capture());
         assertEquals(9999L, captor.getValue().getDeviceId());
-        verify(deviceContextFacade).registerDeviceForSeniorCitizen(9999L);
+        verify(deviceContextFacade).registerDeviceForSeniorCitizen(9999L, null);
         verify(deviceContextFacade, never()).createDeviceForSeniorCitizen();
         verify(deviceContextFacade, never()).reserveNextDeviceId();
     }

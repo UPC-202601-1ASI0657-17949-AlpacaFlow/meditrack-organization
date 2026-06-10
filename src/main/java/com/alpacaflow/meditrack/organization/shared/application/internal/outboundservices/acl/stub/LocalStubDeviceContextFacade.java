@@ -44,7 +44,7 @@ public class LocalStubDeviceContextFacade implements DeviceContextFacade {
     @Override
     public Long createDeviceForSeniorCitizen() {
         long id = reserveNextDeviceId();
-        registerDeviceForSeniorCitizen(id);
+        registerDeviceForSeniorCitizen(id, null);
         return id;
     }
 
@@ -54,7 +54,7 @@ public class LocalStubDeviceContextFacade implements DeviceContextFacade {
     }
 
     @Override
-    public void registerDeviceForSeniorCitizen(Long deviceId) {
+    public void registerDeviceForSeniorCitizen(Long deviceId, Long seniorCitizenId) {
         if (deviceId == null || deviceId <= 0) {
             throw new IllegalArgumentException("Invalid device id");
         }

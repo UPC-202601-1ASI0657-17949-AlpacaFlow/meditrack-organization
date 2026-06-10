@@ -39,5 +39,5 @@ public interface DeviceContextFacade {
     /**
      * Registers a device in the Devices context after a senior citizen was saved successfully.
      */
-    void registerDeviceForSeniorCitizen(Long deviceId);
+    void registerDeviceForSeniorCitizen(Long deviceId, Long seniorCitizenId);
 }
