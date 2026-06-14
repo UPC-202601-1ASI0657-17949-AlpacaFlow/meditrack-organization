@@ -41,6 +41,7 @@ services:
       IAM_ADAPTER: ${IAM_ADAPTER:-rest}
       IAM_BASE_URL: ${IAM_BASE_URL:-https://meditrack-iam-gmh0b2eshgcpbmhw.eastus-01.azurewebsites.net}
       DEVICES_ADAPTER: ${DEVICES_ADAPTER:-stub}
+      DEVICES_BASE_URL: ${DEVICES_BASE_URL:-http://host.docker.internal:8383}
       PUBLIC_BASE_URL: https://${DOMAIN}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://${DOMAIN},http://localhost:4200}
       MESSAGING_ENABLED: ${MESSAGING_ENABLED:-false}
