@@ -4,11 +4,18 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Deploy over SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
@@ -25,23 +32,34 @@ jobs:
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh -i ~/.ssh/deploy_key \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=/dev/null \
-            -o IdentitiesOnly=yes \
-            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+          SSH_OPTS="-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes"
+
+          ssh $SSH_OPTS "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            'mkdir -p ~/meditrack-organization'
+
+          # Sync from runner (authenticated checkout) — avoids git HTTPS auth on the VM
+          rsync -az --delete \
+            --exclude '.git' \
+            --exclude '.env' \
+            --exclude 'mysql_data' \
+            -e "ssh $SSH_OPTS" \
+            ./ "${DEPLOY_USER}@${DEPLOY_HOST}:~/meditrack-organization/"
+
+          ssh $SSH_OPTS "${DEPLOY_USER}@${DEPLOY_HOST}" \
             'set -e
              docker network create meditrack-net 2>/dev/null || true
              if [ -d ~/meditrack-broker/.git ] && [ -f ~/meditrack-broker/.env ]; then
                cd ~/meditrack-broker
-               git fetch origin
-               git reset --hard origin/main
+               git fetch origin || echo "Warning: broker git fetch failed (check VM git credentials)"
+               git reset --hard origin/main || true
                docker compose pull
                docker compose up -d
              fi
+             if [ ! -f ~/meditrack-organization/.env ]; then
+               echo ".env missing on VM. Copy .env.example to .env and configure it once on the server."
+               exit 1
+             fi
              cd ~/meditrack-organization
-             git fetch origin
-             git reset --hard origin/main
              docker compose down
              docker compose up -d --build
              docker compose ps'
