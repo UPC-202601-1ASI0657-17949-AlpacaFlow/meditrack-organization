@@ -13,6 +13,7 @@ import com.alpacaflow.meditrack.organization.organization.infrastructure.persist
 import com.alpacaflow.meditrack.organization.seniorcitizen.domain.exceptions.SeniorCitizenAssignmentException;
 import com.alpacaflow.meditrack.organization.seniorcitizen.domain.exceptions.SeniorCitizenDuplicateRegistrationException;
 import com.alpacaflow.meditrack.organization.seniorcitizen.domain.exceptions.SeniorCitizenNotFoundException;
+import com.alpacaflow.meditrack.organization.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import com.alpacaflow.meditrack.organization.seniorcitizen.domain.model.aggregates.SeniorCitizen;
 import com.alpacaflow.meditrack.organization.seniorcitizen.domain.model.commands.AssignSeniorCitizenToCaregiverCommand;
 import com.alpacaflow.meditrack.organization.seniorcitizen.domain.model.commands.AssignSeniorCitizenToDoctorCommand;
@@ -30,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.lang.reflect.Field;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -86,6 +88,17 @@ class SeniorCitizenCommandServiceImplTest {
                 "Femenino", 62.5, "12345678", 160.0, "https://x/y.png", deviceId);
     }
 
+    private SeniorCitizen withPersistedId(SeniorCitizen seniorCitizen, long id) {
+        try {
+            Field idField = AuditableAbstractAggregateRoot.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(seniorCitizen, id);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
+        return seniorCitizen;
+    }
+
     // ------------------------------------------------------------------
     // CRUD
     // ------------------------------------------------------------------
@@ -95,7 +108,8 @@ class SeniorCitizenCommandServiceImplTest {
         var organization = sampleOrganization();
         when(organizationRepository.findById(1L)).thenReturn(Optional.of(organization));
         when(deviceContextFacade.reserveNextDeviceId()).thenReturn(5001L);
-        when(seniorCitizenRepository.save(any(SeniorCitizen.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(seniorCitizenRepository.save(any(SeniorCitizen.class))).thenAnswer(inv ->
+                withPersistedId(inv.getArgument(0), 42L));
 
         commandService.handle(sampleCreateCommand(null));
 
@@ -105,7 +119,7 @@ class SeniorCitizenCommandServiceImplTest {
         assertEquals(5001L, saved.getDeviceId());
         assertEquals("Maria", saved.getFirstName());
         verify(deviceContextFacade).reserveNextDeviceId();
-        verify(deviceContextFacade).registerDeviceForSeniorCitizen(5001L, null);
+        verify(deviceContextFacade).registerDeviceForSeniorCitizen(5001L, 42L);
         verify(deviceContextFacade, never()).createDeviceForSeniorCitizen();
     }
 
@@ -113,15 +127,16 @@ class SeniorCitizenCommandServiceImplTest {
     void shouldReuseProvidedDeviceIdWhenDeviceExists() {
         var organization = sampleOrganization();
         when(organizationRepository.findById(1L)).thenReturn(Optional.of(organization));
-        when(deviceContextFacade.deviceExists(7777L)).thenReturn(true);
         when(seniorCitizenRepository.existsByDeviceId(7777L)).thenReturn(false);
-        when(seniorCitizenRepository.save(any(SeniorCitizen.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(seniorCitizenRepository.save(any(SeniorCitizen.class))).thenAnswer(inv ->
+                withPersistedId(inv.getArgument(0), 42L));
 
         commandService.handle(sampleCreateCommand(7777L));
 
         var captor = ArgumentCaptor.forClass(SeniorCitizen.class);
         verify(seniorCitizenRepository, atLeastOnce()).save(captor.capture());
         assertEquals(7777L, captor.getValue().getDeviceId());
+        verify(deviceContextFacade).registerDeviceForSeniorCitizen(7777L, 42L);
         verify(deviceContextFacade, never()).createDeviceForSeniorCitizen();
     }
 
@@ -129,15 +144,15 @@ class SeniorCitizenCommandServiceImplTest {
     void shouldUseProvidedDeviceIdWhenNotYetRegisteredInDevicesContext() {
         var organization = sampleOrganization();
         when(organizationRepository.findById(1L)).thenReturn(Optional.of(organization));
-        when(deviceContextFacade.deviceExists(9999L)).thenReturn(false);
-        when(seniorCitizenRepository.save(any(SeniorCitizen.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(seniorCitizenRepository.save(any(SeniorCitizen.class))).thenAnswer(inv ->
+                withPersistedId(inv.getArgument(0), 42L));
 
         commandService.handle(sampleCreateCommand(9999L));
 
         var captor = ArgumentCaptor.forClass(SeniorCitizen.class);
         verify(seniorCitizenRepository, atLeastOnce()).save(captor.capture());
         assertEquals(9999L, captor.getValue().getDeviceId());
-        verify(deviceContextFacade).registerDeviceForSeniorCitizen(9999L, null);
+        verify(deviceContextFacade).registerDeviceForSeniorCitizen(9999L, 42L);
         verify(deviceContextFacade, never()).createDeviceForSeniorCitizen();
         verify(deviceContextFacade, never()).reserveNextDeviceId();
     }

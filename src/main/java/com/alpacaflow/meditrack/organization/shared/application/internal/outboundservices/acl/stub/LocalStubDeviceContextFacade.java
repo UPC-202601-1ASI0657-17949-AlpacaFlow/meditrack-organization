@@ -58,6 +58,10 @@ public class LocalStubDeviceContextFacade implements DeviceContextFacade {
         if (deviceId == null || deviceId <= 0) {
             throw new IllegalArgumentException("Invalid device id");
         }
+        if (seniorCitizenId != null && seniorCitizenId > 0) {
+            devicesById.put(deviceId, new ExternalDevice(deviceId, DEFAULT_STATUS));
+            return;
+        }
         devicesById.putIfAbsent(deviceId, new ExternalDevice(deviceId, DEFAULT_STATUS));
     }
 }

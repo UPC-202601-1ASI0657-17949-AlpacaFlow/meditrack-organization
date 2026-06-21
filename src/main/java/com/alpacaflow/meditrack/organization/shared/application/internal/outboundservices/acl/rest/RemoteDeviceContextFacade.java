@@ -77,9 +77,6 @@ public class RemoteDeviceContextFacade implements DeviceContextFacade {
         if (deviceId == null || deviceId <= 0) {
             throw new IllegalArgumentException("Invalid device id");
         }
-        if (deviceExists(deviceId)) {
-            return;
-        }
         if (seniorCitizenId == null || seniorCitizenId <= 0) {
             LOGGER.warn("Skipping device registration for device {}: missing seniorCitizenId", deviceId);
             return;

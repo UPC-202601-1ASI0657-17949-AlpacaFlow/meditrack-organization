@@ -135,7 +135,9 @@ public class SeniorCitizenCommandServiceImpl implements SeniorCitizenCommandServ
             seniorCitizen.updateDeviceId(command.deviceId());
         }
 
-        return Optional.of(seniorCitizenRepository.save(seniorCitizen));
+        var saved = seniorCitizenRepository.save(seniorCitizen);
+        scheduleDeviceRegistrationAfterCommit(saved.getDeviceId(), command.deviceId(), saved.getId());
+        return Optional.of(saved);
     }
 
     @Override
@@ -248,9 +250,7 @@ public class SeniorCitizenCommandServiceImpl implements SeniorCitizenCommandServ
     }
 
     private void scheduleDeviceRegistrationAfterCommit(Long resolvedDeviceId, Long providedDeviceId, Long seniorCitizenId) {
-        boolean autoCreate = providedDeviceId == null || providedDeviceId <= 0;
-        boolean needsRegistration = autoCreate || !deviceContextFacade.deviceExists(providedDeviceId);
-        if (!needsRegistration) {
+        if (seniorCitizenId == null || seniorCitizenId <= 0) {
             return;
         }
 
