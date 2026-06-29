@@ -99,6 +99,10 @@ public class CaregiverCommandServiceImpl implements CaregiverCommandService {
         if (command.imageUrl() != null && !command.imageUrl().isBlank()) {
             caregiver.updateImageUrl(command.imageUrl());
         }
+        var linkedUserId = ensureIamUserForStaff(caregiver.getUserId(), canonicalEmail);
+        if (!linkedUserId.equals(caregiver.getUserId())) {
+            caregiver.updateUserId(linkedUserId);
+        }
         return Optional.of(caregiverRepository.save(caregiver));
     }
 
@@ -110,6 +114,29 @@ public class CaregiverCommandServiceImpl implements CaregiverCommandService {
         caregiver.markForDeletion();
         caregiverRepository.save(caregiver);
         caregiverRepository.deleteById(command.caregiverId());
+    }
+
+    /**
+     * Ensures the staff member has a real IAM account (repairs caregivers created while IAM/JMS was unavailable).
+     */
+    private Long ensureIamUserForStaff(Long currentUserId, String canonicalEmail) {
+        var existingByEmail = iamContextFacade.findUserByEmail(canonicalEmail);
+        if (existingByEmail.isPresent()) {
+            if (!iamContextFacade.userHasRole(existingByEmail.get().id(), CAREGIVER_ROLE)) {
+                throw new CaregiverInvalidRoleException(existingByEmail.get().id(), existingByEmail.get().role());
+            }
+            return existingByEmail.get().id();
+        }
+        if (currentUserId != null && currentUserId > 0) {
+            var byId = iamContextFacade.findUserById(currentUserId);
+            if (byId.isPresent()) {
+                if (!iamContextFacade.userHasRole(currentUserId, CAREGIVER_ROLE)) {
+                    throw new CaregiverInvalidRoleException(currentUserId, byId.get().role());
+                }
+                return currentUserId;
+            }
+        }
+        return iamContextFacade.createMockUser(canonicalEmail, CAREGIVER_ROLE);
     }
 
     private Long resolveOrAutoprovisionUser(Long providedUserId, String canonicalEmail) {

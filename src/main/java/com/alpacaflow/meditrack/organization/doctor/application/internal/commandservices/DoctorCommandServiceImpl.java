@@ -101,6 +101,10 @@ public class DoctorCommandServiceImpl implements DoctorCommandService {
         if (command.imageUrl() != null && !command.imageUrl().isBlank()) {
             doctor.updateImageUrl(command.imageUrl());
         }
+        var linkedUserId = ensureIamUserForStaff(doctor.getUserId(), canonicalEmail);
+        if (!linkedUserId.equals(doctor.getUserId())) {
+            doctor.updateUserId(linkedUserId);
+        }
         return Optional.of(doctorRepository.save(doctor));
     }
 
@@ -112,6 +116,29 @@ public class DoctorCommandServiceImpl implements DoctorCommandService {
         doctor.markForDeletion();
         doctorRepository.save(doctor);
         doctorRepository.deleteById(command.doctorId());
+    }
+
+    /**
+     * Ensures the staff member has a real IAM account (repairs doctors created while IAM/JMS was unavailable).
+     */
+    private Long ensureIamUserForStaff(Long currentUserId, String canonicalEmail) {
+        var existingByEmail = iamContextFacade.findUserByEmail(canonicalEmail);
+        if (existingByEmail.isPresent()) {
+            if (!iamContextFacade.userHasRole(existingByEmail.get().id(), DOCTOR_ROLE)) {
+                throw new DoctorInvalidRoleException(existingByEmail.get().id(), existingByEmail.get().role());
+            }
+            return existingByEmail.get().id();
+        }
+        if (currentUserId != null && currentUserId > 0) {
+            var byId = iamContextFacade.findUserById(currentUserId);
+            if (byId.isPresent()) {
+                if (!iamContextFacade.userHasRole(currentUserId, DOCTOR_ROLE)) {
+                    throw new DoctorInvalidRoleException(currentUserId, byId.get().role());
+                }
+                return currentUserId;
+            }
+        }
+        return iamContextFacade.createMockUser(canonicalEmail, DOCTOR_ROLE);
     }
 
     private Long resolveOrAutoprovisionUser(Long providedUserId, String canonicalEmail) {

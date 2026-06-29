@@ -98,6 +98,12 @@ public class Doctor extends AuditableAbstractAggregateRoot<Doctor> {
         return this;
     }
 
+    public Doctor updateUserId(Long userId) {
+        this.userId = validateUserId(userId);
+        this.addDomainEvent(new DoctorUpdatedEvent(this, this.getId(), this.getOrganizationId()));
+        return this;
+    }
+
     public void markForDeletion() {
         this.addDomainEvent(new DoctorDeletedEvent(this, this.getId(), this.getOrganizationId()));
     }

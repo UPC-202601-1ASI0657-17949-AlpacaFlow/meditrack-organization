@@ -93,6 +93,12 @@ public class Caregiver extends AuditableAbstractAggregateRoot<Caregiver> {
         return this;
     }
 
+    public Caregiver updateUserId(Long userId) {
+        this.userId = validateUserId(userId);
+        this.addDomainEvent(new CaregiverUpdatedEvent(this, this.getId(), this.getOrganizationId()));
+        return this;
+    }
+
     public void markForDeletion() {
         this.addDomainEvent(new CaregiverDeletedEvent(this, this.getId(), this.getOrganizationId()));
     }
