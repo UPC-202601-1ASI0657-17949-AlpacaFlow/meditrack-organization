@@ -127,10 +127,6 @@ public class SeniorCitizenCommandServiceImpl implements SeniorCitizenCommandServ
         );
 
         if (!command.deviceId().equals(seniorCitizen.getDeviceId())) {
-            if (!deviceContextFacade.deviceExists(command.deviceId())) {
-                throw new DeviceUnavailableException(
-                        "Device %d does not exist in Devices context".formatted(command.deviceId()));
-            }
             assertDeviceNotLinkedToAnotherSenior(command.deviceId(), command.seniorCitizenId());
             seniorCitizen.updateDeviceId(command.deviceId());
         }
